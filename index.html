@@ -113,6 +113,28 @@
     pointer-events: none;
     opacity: 0.85;
   }
+  .start-veil {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: grid;
+    place-items: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(2px);
+    cursor: pointer;
+    transition: opacity 220ms ease;
+  }
+  .start-veil[hidden] { display: none; }
+  .start-veil .label {
+    color: var(--chip-fg);
+    border: 1px solid var(--chip-border);
+    background: var(--chip-bg);
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
 </style>
 </head>
 <body>
@@ -125,6 +147,9 @@
     </div>
     <div class="chrome br">
       <button class="chip" id="backBtn" hidden>Back</button>
+    </div>
+    <div class="start-veil" id="startVeil">
+      <span class="label">Tap to start</span>
     </div>
   </div>
 
@@ -393,8 +418,19 @@ function onBack() {
 
 backBtn.addEventListener("click", onBack);
 
-// kick off
-startIdle("albedo_anchor_from_codex");
+// Mobile browsers (iOS Safari in particular) block autoplay outside a user
+// gesture even when muted+playsinline. Gate the first play() behind a tap.
+const startVeil = document.getElementById("startVeil");
+async function start() {
+  if (!startVeil.hidden) startVeil.hidden = true;
+  // Prime both video elements within the gesture so subsequent play() calls
+  // (on swap) are allowed.
+  try { vidA.muted = true; vidB.muted = true; await vidA.play(); vidA.pause(); } catch (_) {}
+  try { await vidB.play(); vidB.pause(); } catch (_) {}
+  await startIdle("albedo_anchor_from_codex");
+}
+startVeil.addEventListener("click", start, { once: true });
+startVeil.addEventListener("touchend", (e) => { e.preventDefault(); start(); }, { once: true, passive: false });
 </script>
 </body>
 </html>
