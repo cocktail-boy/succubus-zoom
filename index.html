@@ -419,18 +419,17 @@ function onBack() {
 backBtn.addEventListener("click", onBack);
 
 // Mobile browsers (iOS Safari in particular) block autoplay outside a user
-// gesture even when muted+playsinline. Gate the first play() behind a tap.
+// gesture. Gate the first play() behind a tap; do NOT await anything before
+// startIdle, so the inner play() still runs inside the gesture context.
 const startVeil = document.getElementById("startVeil");
-async function start() {
-  if (!startVeil.hidden) startVeil.hidden = true;
-  // Prime both video elements within the gesture so subsequent play() calls
-  // (on swap) are allowed.
-  try { vidA.muted = true; vidB.muted = true; await vidA.play(); vidA.pause(); } catch (_) {}
-  try { await vidB.play(); vidB.pause(); } catch (_) {}
-  await startIdle("albedo_anchor_from_codex");
+function start() {
+  startVeil.hidden = true;
+  // Prime vidB inside the gesture with a no-op load so a later programmatic
+  // play() on it (during the first swap) is allowed on iOS.
+  try { vidB.load(); } catch (_) {}
+  startIdle("albedo_anchor_from_codex");
 }
 startVeil.addEventListener("click", start, { once: true });
-startVeil.addEventListener("touchend", (e) => { e.preventDefault(); start(); }, { once: true, passive: false });
 </script>
 </body>
 </html>
